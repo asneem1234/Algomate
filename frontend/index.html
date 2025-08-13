@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSA Buddy - Track Your Progress</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>DSA Buddy</h1>
+            <p>Track and learn Data Structures & Algorithms problems</p>
+        </header>
+
+        <!-- Upload Section -->
+        <section class="upload-section">
+            <div class="upload-card">
+                <h2>Upload Problems</h2>
+                <div class="upload-options">
+                    <div class="upload-method">
+                        <h3>Upload File</h3>
+                        <input type="file" id="fileInput" accept=".txt,.pdf" />
+                        <button id="uploadFileBtn" class="btn btn-primary">Upload File</button>
+                    </div>
+                    <div class="upload-method">
+                        <h3>Paste Text</h3>
+                        <textarea id="textInput" placeholder="Paste your DSA problems list here...&#10;Example:&#10;1. Two Sum (Easy) - Array, Hash Table&#10;2. Add Two Numbers (Medium) - Linked List&#10;3. Longest Substring Without Repeating Characters (Medium) - String, Sliding Window"></textarea>
+                        <button id="uploadTextBtn" class="btn btn-primary">Upload Text</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Problems</h3>
+                    <span id="totalProblems">0</span>
+                </div>
+                <div class="stat-card">
+                    <h3>Not Started</h3>
+                    <span id="notStarted">0</span>
+                </div>
+                <div class="stat-card">
+                    <h3>In Progress</h3>
+                    <span id="inProgress">0</span>
+                </div>
+                <div class="stat-card">
+                    <h3>Completed</h3>
+                    <span id="completed">0</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Filters Section -->
+        <section class="filters-section">
+            <div class="filters">
+                <input type="text" id="searchInput" placeholder="Search problems..." />
+                <select id="categoryFilter">
+                    <option value="all">All Categories</option>
+                </select>
+                <select id="difficultyFilter">
+                    <option value="all">All Difficulties</option>
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                </select>
+                <select id="statusFilter">
+                    <option value="all">All Status</option>
+                    <option value="Not Started">Not Started</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Done">Done</option>
+                </select>
+                <button id="refreshBtn" class="btn btn-secondary">Refresh</button>
+            </div>
+        </section>
+
+        <!-- Problems Table -->
+        <section class="table-section">
+            <div class="table-container">
+                <table id="problemsTable">
+                    <thead>
+                        <tr>
+                            <th>LeetCode #</th>
+                            <th>Problem Name</th>
+                            <th>Category</th>
+                            <th>Difficulty</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="problemsTableBody">
+                        <!-- Problems will be populated here -->
+                    </tbody>
+                </table>
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <h3>No problems found</h3>
+                    <p>Upload some DSA problems to get started!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Problem Detail Modal -->
+        <div id="problemModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="modalProblemName">Problem Name</h2>
+                    <span class="close" id="closeModal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <div class="problem-info">
+                        <span class="difficulty-badge" id="modalDifficulty">Easy</span>
+                        <span class="category-badge" id="modalCategory">Array</span>
+                    </div>
+                    
+                    <div class="learning-steps">
+                        <div class="step-navigation">
+                            <button class="step-btn active" data-step="1">1. Question Reading</button>
+                            <button class="step-btn" data-step="2">2. Example</button>
+                            <button class="step-btn" data-step="3">3. Approach</button>
+                            <button class="step-btn" data-step="4">4. Solution</button>
+                            <button class="step-btn" data-step="5">5. Behavioral</button>
+                            <button class="step-btn" data-step="6">6. Modifications</button>
+                            <button class="step-btn" data-step="7">7. Applications</button>
+                        </div>
+                        
+                        <div class="step-content">
+                            <div id="stepContent" class="step-text">
+                                <div class="loading">Loading AI content...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+            <div class="loading-spinner"></div>
+            <p>Processing...</p>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div id="toastContainer" class="toast-container"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
+
