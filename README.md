@@ -34,6 +34,10 @@ AlgoMate is a comprehensive learning platform for mastering algorithms and data 
 
 ## Installation and Setup
 
+For detailed installation and running instructions, see [RUNNING.md](RUNNING.md).
+
+### Quick Start
+
 ### Prerequisites
 - Node.js and npm installed
 - Chrome browser for extension testing
@@ -50,7 +54,7 @@ AlgoMate is a comprehensive learning platform for mastering algorithms and data 
 3. Create a `.env` file with the following variables:
    ```
    PORT=3000
-   AI_API_KEY=your_deepseek_api_key
+   DEEPSEEK_API_KEY=your_deepseek_api_key_here
    ```
 4. Start the server:
    ```
@@ -58,7 +62,7 @@ AlgoMate is a comprehensive learning platform for mastering algorithms and data 
    ```
 
 ### Frontend Setup
-1. Open `frontend/index.html` in your browser or use a local server
+1. With the backend running, simply navigate to `http://localhost:3000` in your browser
 
 ### Chrome Extension Setup
 1. Open Chrome and navigate to `chrome://extensions/`
