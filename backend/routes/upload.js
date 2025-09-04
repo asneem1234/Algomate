@@ -119,30 +119,29 @@ function parseProblemLine(line) {
 
 // Insert problem into database
 function insertProblem(problem) {
-  return new Promise((resolve, reject) => {
+  try {
     const sql = `
       INSERT INTO problems (name, category, difficulty, leetcode_number, description)
       VALUES (?, ?, ?, ?, ?)
     `;
     
-    db.run(sql, [
+    const stmt = db.prepare(sql);
+    const result = stmt.run(
       problem.name,
       problem.category,
       problem.difficulty,
       problem.leetcode_number,
       problem.description
-    ], function(err) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({
-          id: this.lastID,
-          ...problem,
-          status: 'Not Started'
-        });
-      }
-    });
-  });
+    );
+    
+    return {
+      id: result.lastInsertRowid,
+      ...problem,
+      status: 'Not Started'
+    };
+  } catch (err) {
+    throw new Error(`Error inserting problem: ${err.message}`);
+  }
 }
 
 module.exports = router;

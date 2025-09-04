@@ -5,48 +5,49 @@ const router = express.Router();
 
 // GET /api/problems - returns list of problems
 router.get('/problems', (req, res) => {
-  const { search, category, difficulty, status } = req.query;
-  
-  let sql = 'SELECT * FROM problems WHERE 1=1';
-  const params = [];
+  try {
+    const { search, category, difficulty, status } = req.query;
+    
+    let sql = 'SELECT * FROM problems WHERE 1=1';
+    const params = [];
 
-  // Add search filter
-  if (search) {
-    sql += ' AND (name LIKE ? OR description LIKE ?)';
-    params.push(`%${search}%`, `%${search}%`);
-  }
-
-  // Add category filter
-  if (category && category !== 'all') {
-    sql += ' AND category LIKE ?';
-    params.push(`%${category}%`);
-  }
-
-  // Add difficulty filter
-  if (difficulty && difficulty !== 'all') {
-    sql += ' AND difficulty = ?';
-    params.push(difficulty);
-  }
-
-  // Add status filter
-  if (status && status !== 'all') {
-    sql += ' AND status = ?';
-    params.push(status);
-  }
-
-  sql += ' ORDER BY created_at DESC';
-
-  db.all(sql, params, (err, rows) => {
-    if (err) {
-      console.error('Error fetching problems:', err);
-      res.status(500).json({ error: 'Failed to fetch problems' });
-    } else {
-      res.json({
-        problems: rows,
-        total: rows.length
-      });
+    // Add search filter
+    if (search) {
+      sql += ' AND (name LIKE ? OR description LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
     }
-  });
+
+    // Add category filter
+    if (category && category !== 'all') {
+      sql += ' AND category LIKE ?';
+      params.push(`%${category}%`);
+    }
+
+    // Add difficulty filter
+    if (difficulty && difficulty !== 'all') {
+      sql += ' AND difficulty = ?';
+      params.push(difficulty);
+    }
+
+    // Add status filter
+    if (status && status !== 'all') {
+      sql += ' AND status = ?';
+      params.push(status);
+    }
+
+    sql += ' ORDER BY created_at DESC';
+
+    const stmt = db.prepare(sql);
+    const rows = stmt.all(...params);
+    
+    res.json({
+      problems: rows,
+      total: rows.length
+    });
+  } catch (err) {
+    console.error('Error fetching problems:', err);
+    res.status(500).json({ error: 'Failed to fetch problems' });
+  }
 });
 
 // GET /api/problems/stats - returns statistics about problems

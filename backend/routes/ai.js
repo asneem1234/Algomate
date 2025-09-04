@@ -4,11 +4,11 @@ const db = require('../db');
 
 const router = express.Router();
 
-// DeepSeek API configuration
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
+// Gemini API configuration
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// System prompt for DeepSeek API
+// System prompt for Gemini API
 const SYSTEM_PROMPT = `You are a DSA mentor. When given a problem description, respond ONLY in the following JSON format:
 
 {
@@ -22,20 +22,23 @@ const SYSTEM_PROMPT = `You are a DSA mentor. When given a problem description, r
 }
 
 Rules:
+- For each step, provide comprehensive, detailed explanations with clear reasoning.
+- Use sections, bullet points and formatting to organize your thoughts.
+- Include concrete examples and walk through the reasoning step-by-step.
 - Do NOT give full final code unless explicitly requested.
 - For steps 3 & 4, focus on guiding questions and partial pseudocode.
-- Keep each step under 200 words.
+- Each step should be detailed and thorough (300-500 words).
 
 Step descriptions:
-1. Question Reading – Restate problem in simple words.
-2. Understand with an Example – Show dry run with sample data.
-3. Think & Apply Your Approach – Ask guiding questions, nudge toward algorithm selection.
-4. Learn Solution (Brute Force & Optimal) – Compare approaches with time/space analysis.
-5. Behavioral Questions – Example: "How would you optimize further?"
-6. Modifications Possibilities – Variants of the problem.
-7. Real-Life Applications – Where this logic is used IRL.`;
+1. Question Reading – Restate problem in simple words, break down the requirements, identify inputs/outputs, constraints, and discuss any edge cases in detail.
+2. Understand with an Example – Show detailed dry run with step-by-step visualizations of multiple sample cases, including edge cases and corner scenarios.
+3. Think & Apply Your Approach – Provide comprehensive thinking process with guiding questions, detailed reasoning for algorithm selection, and step-by-step development of approach.
+4. Learn Solution (Brute Force & Optimal) – In-depth comparison of multiple approaches with detailed time/space analysis, optimization techniques, and trade-offs.
+5. Behavioral Questions – Explore problem-solving thought process, optimization strategies, and how to handle potential interview follow-up questions.
+6. Modifications Possibilities – Analyze multiple variants of the problem, how they change the solution approach, and strategies to adapt.
+7. Real-Life Applications – Detailed explanation of where this algorithm/pattern is used in real systems, software, and technologies.`;
 
-// POST /api/ai/:step - sends problem details + step number to DeepSeek API
+// POST /api/ai/:step - sends problem details + step number to Gemini API
 router.post('/ai/:step', async (req, res) => {
   const stepNumber = parseInt(req.params.step);
   const { problemId, problemName, problemDescription } = req.body;
@@ -124,10 +127,10 @@ router.post('/ai/all/:problemId', async (req, res) => {
   }
 });
 
-// Generate AI response using DeepSeek API
+// Generate AI response using Gemini API
 async function generateAIResponse(problemName, problemDescription, stepNumber) {
-  if (!DEEPSEEK_API_KEY) {
-    throw new Error('DeepSeek API key not configured');
+  if (!GEMINI_API_KEY) {
+    throw new Error('Gemini API key not configured');
   }
 
   const userPrompt = `Problem: ${problemName}
@@ -135,22 +138,31 @@ Description: ${problemDescription}
 
 Please provide all 7 steps of the learning flow for this DSA problem. Focus especially on step ${stepNumber} but provide all steps in the JSON format.`;
 
-  const response = await axios.post(DEEPSEEK_API_URL, {
-    model: 'deepseek-chat',
-    messages: [
-      { role: 'system', content: SYSTEM_PROMPT },
-      { role: 'user', content: userPrompt }
+  // Gemini API expects a different request format
+  const response = await axios.post(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    contents: [
+      {
+        role: "user",
+        parts: [
+          { text: SYSTEM_PROMPT },
+          { text: userPrompt }
+        ]
+      }
     ],
-    temperature: 0.7,
-    max_tokens: 2000
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 2000,
+      topP: 0.95,
+      topK: 40
+    }
   }, {
     headers: {
-      'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
       'Content-Type': 'application/json'
     }
   });
 
-  const aiContent = response.data.choices[0].message.content;
+  // Gemini API response structure is different
+  const aiContent = response.data.candidates[0].content.parts[0].text;
   
   try {
     return JSON.parse(aiContent);
@@ -162,38 +174,32 @@ Please provide all 7 steps of the learning flow for this DSA problem. Focus espe
 
 // Helper functions
 function getProblemById(id) {
-  return new Promise((resolve, reject) => {
-    db.get('SELECT * FROM problems WHERE id = ?', [id], (err, row) => {
-      if (err) reject(err);
-      else resolve(row);
-    });
-  });
+  try {
+    const stmt = db.prepare('SELECT * FROM problems WHERE id = ?');
+    return stmt.get(id);
+  } catch (err) {
+    throw new Error(`Error fetching problem: ${err.message}`);
+  }
 }
 
 function getCachedAIResponse(problemId, step) {
-  return new Promise((resolve, reject) => {
-    db.get(
-      'SELECT response FROM ai_cache WHERE problem_id = ? AND step = ?',
-      [problemId, step],
-      (err, row) => {
-        if (err) reject(err);
-        else resolve(row ? row.response : null);
-      }
-    );
-  });
+  try {
+    const stmt = db.prepare('SELECT response FROM ai_cache WHERE problem_id = ? AND step = ?');
+    const row = stmt.get(problemId, step);
+    return row ? row.response : null;
+  } catch (err) {
+    throw new Error(`Error fetching cached AI response: ${err.message}`);
+  }
 }
 
 function cacheAIResponse(problemId, step, response) {
-  return new Promise((resolve, reject) => {
-    db.run(
-      'INSERT OR REPLACE INTO ai_cache (problem_id, step, response) VALUES (?, ?, ?)',
-      [problemId, step, response],
-      function(err) {
-        if (err) reject(err);
-        else resolve(this.lastID);
-      }
-    );
-  });
+  try {
+    const stmt = db.prepare('INSERT OR REPLACE INTO ai_cache (problem_id, step, response) VALUES (?, ?, ?)');
+    const result = stmt.run(problemId, step, response);
+    return result.lastInsertRowid;
+  } catch (err) {
+    throw new Error(`Error caching AI response: ${err.message}`);
+  }
 }
 
 module.exports = router;

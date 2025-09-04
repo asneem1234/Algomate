@@ -34,41 +34,35 @@ router.get('/problem/:id', async (req, res) => {
 
 // Helper function to get problem by ID
 function getProblemById(id) {
-  return new Promise((resolve, reject) => {
-    db.get('SELECT * FROM problems WHERE id = ?', [id], (err, row) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(row);
-      }
-    });
-  });
+  try {
+    const stmt = db.prepare('SELECT * FROM problems WHERE id = ?');
+    const row = stmt.get(id);
+    return row;
+  } catch (err) {
+    throw new Error(`Error fetching problem: ${err.message}`);
+  }
 }
 
 // Helper function to get AI steps for a problem
 function getAIStepsForProblem(problemId) {
-  return new Promise((resolve, reject) => {
-    db.all(
-      'SELECT step, response FROM ai_cache WHERE problem_id = ? ORDER BY step',
-      [problemId],
-      (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          const steps = {};
-          rows.forEach(row => {
-            try {
-              steps[`step${row.step}`] = JSON.parse(row.response);
-            } catch (parseErr) {
-              console.error('Error parsing AI response:', parseErr);
-              steps[`step${row.step}`] = row.response;
-            }
-          });
-          resolve(steps);
-        }
+  try {
+    const stmt = db.prepare('SELECT step, response FROM ai_cache WHERE problem_id = ? ORDER BY step');
+    const rows = stmt.all(problemId);
+    
+    const steps = {};
+    rows.forEach(row => {
+      try {
+        steps[`step${row.step}`] = JSON.parse(row.response);
+      } catch (parseErr) {
+        console.error('Error parsing AI response:', parseErr);
+        steps[`step${row.step}`] = row.response;
       }
-    );
-  });
+    });
+    
+    return steps;
+  } catch (err) {
+    throw new Error(`Error fetching AI steps: ${err.message}`);
+  }
 }
 
 module.exports = router;

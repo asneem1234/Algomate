@@ -24,13 +24,12 @@ router.post('/status/:id', (req, res) => {
     });
   }
 
-  const sql = 'UPDATE problems SET status = ? WHERE id = ?';
-  
-  db.run(sql, [status, problemId], function(err) {
-    if (err) {
-      console.error('Error updating status:', err);
-      res.status(500).json({ error: 'Failed to update status' });
-    } else if (this.changes === 0) {
+  try {
+    const sql = 'UPDATE problems SET status = ? WHERE id = ?';
+    const stmt = db.prepare(sql);
+    const result = stmt.run(status, problemId);
+    
+    if (result.changes === 0) {
       res.status(404).json({ error: 'Problem not found' });
     } else {
       res.json({ 
@@ -39,7 +38,10 @@ router.post('/status/:id', (req, res) => {
         status
       });
     }
-  });
+  } catch (err) {
+    console.error('Error updating status:', err);
+    res.status(500).json({ error: 'Failed to update status' });
+  }
 });
 
 // GET /api/status/:id - get current status of a problem
@@ -50,18 +52,20 @@ router.get('/status/:id', (req, res) => {
     return res.status(400).json({ error: 'Invalid problem ID' });
   }
 
-  const sql = 'SELECT id, name, status FROM problems WHERE id = ?';
-  
-  db.get(sql, [problemId], (err, row) => {
-    if (err) {
-      console.error('Error fetching status:', err);
-      res.status(500).json({ error: 'Failed to fetch status' });
-    } else if (!row) {
+  try {
+    const sql = 'SELECT id, name, status FROM problems WHERE id = ?';
+    const stmt = db.prepare(sql);
+    const row = stmt.get(problemId);
+    
+    if (!row) {
       res.status(404).json({ error: 'Problem not found' });
     } else {
       res.json(row);
     }
-  });
+  } catch (err) {
+    console.error('Error fetching status:', err);
+    res.status(500).json({ error: 'Failed to fetch status' });
+  }
 });
 
 module.exports = router;
