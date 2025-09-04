@@ -323,22 +323,74 @@ class DSABuddy {
     }
 
     showStep(stepNumber) {
-        // Update active step button
+        // Update active step button with smooth transition
         document.querySelectorAll('.step-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        document.querySelector(`[data-step="${stepNumber}"]`).classList.add('active');
+        const activeButton = document.querySelector(`[data-step="${stepNumber}"]`);
+        activeButton.classList.add('active');
+        
+        // Add a subtle animation to draw attention to the active button
+        activeButton.animate([
+            { transform: 'scale(1.05)', boxShadow: '0 6px 15px rgba(102, 126, 234, 0.4)' },
+            { transform: 'scale(1)', boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)' }
+        ], {
+            duration: 300,
+            easing: 'ease-out'
+        });
 
-        // Show step content
+        // Prepare step content with transition
         const stepContent = document.getElementById('stepContent');
         const stepKey = `step${stepNumber}`;
         
-        if (this.currentSteps && this.currentSteps[stepKey]) {
-            stepContent.innerHTML = this.formatStepContent(this.currentSteps[stepKey]);
-        } else {
-            stepContent.innerHTML = '<div class="loading">Loading step content...</div>';
-            this.loadSingleStep(stepNumber);
-        }
+        // First fade out the current content
+        stepContent.style.opacity = '0';
+        stepContent.style.transform = 'translateY(10px)';
+        
+        // Wait for fade-out to complete
+        setTimeout(() => {
+            // Then update the content
+            if (this.currentSteps && this.currentSteps[stepKey]) {
+                // Extract the actual step content
+                const content = this.currentSteps[stepKey];
+                
+                // Format based on step type/number
+                let stepTitle = '';
+                switch(stepNumber) {
+                    case 1: stepTitle = '<div class="step-header">Question Reading</div>'; break;
+                    case 2: stepTitle = '<div class="step-header">Example Analysis</div>'; break;
+                    case 3: stepTitle = '<div class="step-header">Approach Development</div>'; break;
+                    case 4: stepTitle = '<div class="step-header">Solution & Optimization</div>'; break;
+                    case 5: stepTitle = '<div class="step-header">Behavioral Analysis</div>'; break;
+                    case 6: stepTitle = '<div class="step-header">Problem Modifications</div>'; break;
+                    case 7: stepTitle = '<div class="step-header">Real-World Applications</div>'; break;
+                }
+                
+                // For each step, extract the text directly from the step's value
+                if (typeof content === 'string') {
+                    // If it's already a string, display it directly
+                    stepContent.innerHTML = stepTitle + this.enhancedFormatting(content);
+                } else {
+                    // If we have the full response from the server, it might have the step text directly
+                    const stepValue = content[`step${stepNumber}`] || content;
+                    if (typeof stepValue === 'string') {
+                        stepContent.innerHTML = stepTitle + this.enhancedFormatting(stepValue);
+                    } else {
+                        // If it's still an object, format it properly
+                        stepContent.innerHTML = stepTitle + this.formatStepContent(stepValue);
+                    }
+                }
+            } else {
+                stepContent.innerHTML = '<div class="loading"><div class="loading-spinner-small"></div> Loading comprehensive analysis...</div>';
+                this.loadSingleStep(stepNumber);
+            }
+            
+            // Then fade in the new content
+            setTimeout(() => {
+                stepContent.style.opacity = '1';
+                stepContent.style.transform = 'translateY(0)';
+            }, 50);
+        }, 200); // Short delay for the fade-out
 
         this.currentStep = stepNumber;
     }
@@ -363,11 +415,20 @@ class DSABuddy {
 
             if (response.ok) {
                 if (!this.currentSteps) this.currentSteps = {};
-                this.currentSteps[`step${stepNumber}`] = stepData[`step${stepNumber}`];
+                this.currentSteps[`step${stepNumber}`] = stepData;
                 
                 if (this.currentStep === stepNumber) {
-                    document.getElementById('stepContent').innerHTML = 
-                        this.formatStepContent(stepData[`step${stepNumber}`]);
+                    // Extract the actual step content
+                    const stepKey = `step${stepNumber}`;
+                    const stepContent = stepData[stepKey];
+                    
+                    if (typeof stepContent === 'string') {
+                        // If it's already a string, display it directly
+                        document.getElementById('stepContent').innerHTML = this.formatText(stepContent);
+                    } else {
+                        // If it's still an object or undefined, use the formatStepContent helper
+                        document.getElementById('stepContent').innerHTML = this.formatStepContent(stepData);
+                    }
                 }
             } else {
                 document.getElementById('stepContent').innerHTML = 
@@ -382,21 +443,127 @@ class DSABuddy {
 
     formatStepContent(content) {
         if (typeof content === 'string') {
-            return `<div class="step-text">${this.formatText(content)}</div>`;
+            return `<div class="step-text">${this.enhancedFormatting(content)}</div>`;
         }
-        return `<div class="step-text">${this.formatText(JSON.stringify(content, null, 2))}</div>`;
+        
+        // Extract the content directly from the step data
+        let stepText = '';
+        
+        // Check if content is the specific step key (like "step1", "step2", etc.)
+        if (content && typeof content === 'object') {
+            // If this is the JSON response format we're seeing in the example
+            const stepKey = Object.keys(content).find(key => key.startsWith('step'));
+            if (stepKey) {
+                stepText = content[stepKey];
+            } else {
+                // Try to find the step in other potential formats
+                for (const key of Object.keys(content)) {
+                    if (typeof content[key] === 'string' && content[key].trim().length > 0) {
+                        stepText = content[key];
+                        break;
+                    }
+                }
+                
+                // If we still don't have content, check common property names
+                if (!stepText) {
+                    stepText = content.content || content.text || content.explanation || 
+                               content.value || JSON.stringify(content);
+                }
+            }
+        } else {
+            stepText = String(content);
+        }
+        
+        // Apply enhanced formatting for more detailed output
+        return `<div class="step-text">${this.enhancedFormatting(stepText)}</div>`;
+    }
+    
+    // Enhanced formatting with improved structure and detailing
+    enhancedFormatting(text) {
+        // First apply basic markdown formatting
+        let formatted = this.formatText(text);
+        
+        // Identify step titles and add special formatting
+        const stepTitles = [
+            'Question Reading', 'Example', 'Approach', 'Solution', 
+            'Behavioral', 'Modifications', 'Applications'
+        ];
+        
+        // Create header sections for important parts
+        stepTitles.forEach((title, index) => {
+            const regex = new RegExp(`(${title}[:\\s-]*)`, 'gi');
+            formatted = formatted.replace(regex, `<h3 class="step-section-title">$1</h3>`);
+        });
+        
+        // Highlight key concepts and terms
+        const keyTerms = [
+            'Time Complexity', 'Space Complexity', 'O\\(n\\)', 'O\\(1\\)', 'O\\(n²\\)', 'O\\(n log n\\)',
+            'Brute Force', 'Optimal Solution', 'Algorithm', 'Data Structure', 'Hash Table', 'Two Pointer',
+            'Sliding Window', 'Dynamic Programming', 'Recursion', 'Iteration'
+        ];
+        
+        keyTerms.forEach(term => {
+            const regex = new RegExp(`(${term})`, 'g');
+            formatted = formatted.replace(regex, `<span class="keyword">$1</span>`);
+        });
+        
+        // Format code snippets better
+        formatted = formatted.replace(/```([^`]+)```/g, '<div class="code-block"><pre><code>$1</code></pre></div>');
+        
+        // Add visual separation between major sections
+        formatted = formatted.replace(/<\/h3>/g, '</h3><div class="section-divider"></div>');
+        
+        // Make lists more visually distinct
+        formatted = formatted.replace(/(\d+\.\s[^<\n]+)(<br>|<\/p>)/g, '<div class="list-item">$1</div>$2');
+        
+        // Add example highlighting
+        formatted = formatted.replace(/(Example:[^\n<]+)/g, '<div class="example-highlight">$1</div>');
+        
+        return formatted;
     }
 
     formatText(text) {
-        // Convert markdown-like formatting to HTML
-        return text
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/`(.*?)`/g, '<code>$1</code>')
-            .replace(/\n\n/g, '</p><p>')
-            .replace(/\n/g, '<br>')
-            .replace(/^/, '<p>')
-            .replace(/$/, '</p>');
+        // First, handle code blocks with ```
+        text = text.replace(/```([^`]+)```/g, '<pre><code>$1</code></pre>');
+        
+        // Handle inline code
+        text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+        
+        // Handle bold and italic
+        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        
+        // Handle numbered lists
+        text = text.replace(/(\d+\.\s)(.*?)(\n|$)/g, '<div class="list-item"><span class="list-number">$1</span>$2</div>');
+        
+        // Handle bullet points
+        text = text.replace(/(-\s)(.*?)(\n|$)/g, '<div class="list-item bullet"><span class="bullet-point">•</span>$2</div>');
+        
+        // Handle sections with common titles
+        const sections = [
+            'Problem Understanding', 'Problem Statement', 'Example', 'Approach', 
+            'Algorithm', 'Time Complexity', 'Space Complexity', 'Solution',
+            'Brute Force', 'Optimization', 'Real-life Applications'
+        ];
+        
+        sections.forEach(section => {
+            const regex = new RegExp(`(${section}\\s*:)\\s*(.+?)(?=\\n\\n|$)`, 'g');
+            text = text.replace(regex, '<div class="concept-section"><span class="section-title">$1</span> $2</div>');
+        });
+        
+        // Handle paragraphs
+        text = text.replace(/\n\n/g, '</p><p>');
+        text = text.replace(/\n/g, '<br>');
+        
+        // Wrap everything in paragraphs if needed
+        if (!text.startsWith('<div') && !text.startsWith('<pre') && !text.startsWith('<p')) {
+            text = `<p>${text}</p>`;
+        }
+        
+        // Add highlighting for complexity mentions
+        text = text.replace(/(O\([^)]+\))/g, '<span class="complexity-tag">$1</span>');
+        
+        return text;
     }
 
     closeModal() {
