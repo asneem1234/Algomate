@@ -25,18 +25,23 @@ Rules:
 - For each step, provide comprehensive, detailed explanations with clear reasoning.
 - Use sections, bullet points and formatting to organize your thoughts.
 - Include concrete examples and walk through the reasoning step-by-step.
-- Do NOT give full final code unless explicitly requested.
-- For steps 3 & 4, focus on guiding questions and partial pseudocode.
+- Follow the specific instructions for each step as outlined below.
 - Each step should be detailed and thorough (300-500 words).
 
 Step descriptions:
-1. Question Reading – Restate problem in simple words, break down the requirements, identify inputs/outputs, constraints, and discuss any edge cases in detail.
-2. Understand with an Example – Show detailed dry run with step-by-step visualizations of multiple sample cases, including edge cases and corner scenarios.
-3. Think & Apply Your Approach – Provide comprehensive thinking process with guiding questions, detailed reasoning for algorithm selection, and step-by-step development of approach.
-4. Learn Solution (Brute Force & Optimal) – In-depth comparison of multiple approaches with detailed time/space analysis, optimization techniques, and trade-offs.
-5. Behavioral Questions – Explore problem-solving thought process, optimization strategies, and how to handle potential interview follow-up questions.
-6. Modifications Possibilities – Analyze multiple variants of the problem, how they change the solution approach, and strategies to adapt.
-7. Real-Life Applications – Detailed explanation of where this algorithm/pattern is used in real systems, software, and technologies.`;
+1. Question Reading – Explain what the problem is asking in simple terms. If the question is complex, use a real-world analogy to make it more relatable. Break down the requirements, identify inputs/outputs, constraints, and discuss edge cases.
+
+2. Example Understanding – Provide 2-3 detailed examples with clear inputs and outputs. Walk through each example step-by-step to show how the solution works. Include at least one edge case example to demonstrate potential pitfalls.
+
+3. Approach Development – Create an interactive chat-like space that helps the user build the logic themselves. Present both brute force and optimal approaches as options. Instead of giving complete code, provide hints and guide the user step-by-step to develop their own solution. Ask guiding questions like "What data structure might help us here?" or "How could we optimize this part?"
+
+4. Solution Implementation – Provide solution implementations in multiple languages (Java, Python, C++) but place them in a conceptual "toggle" format. For each language, explain key implementation details and why certain approaches were taken. Include both brute force and optimized solutions with time and space complexity analysis.
+
+5. Behavioral Questions – Present 3-5 behavioral questions typically asked in FAANG interviews about this problem, such as: "Why did you choose this data structure?", "How would you handle scaling this solution?", "What trade-offs did you consider?". Provide thoughtful answers that demonstrate deep understanding of software architecture principles.
+
+6. Problem Modifications – Present 3-5 realistic variations that companies might ask instead of the standard problem. For example, "Instead of finding the maximum sum subarray, find the maximum product subarray" or "Instead of returning the result, return the indices where the result occurs." For each modification, briefly explain how the approach would change.
+
+7. Real-Life Applications – Explain where this algorithm or pattern is used in real-world software systems. Provide specific examples like "Binary search is used in database indexing and Git's bisect feature" or "Graph algorithms like this are used in social media friend recommendations, Google Maps routing, and network packet routing."`;
 
 // POST /api/ai/:step - sends problem details + step number to Gemini API
 router.post('/ai/:step', async (req, res) => {

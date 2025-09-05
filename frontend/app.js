@@ -357,12 +357,12 @@ class DSABuddy {
                 // Format based on step type/number
                 let stepTitle = '';
                 switch(stepNumber) {
-                    case 1: stepTitle = '<div class="step-header">Question Reading</div>'; break;
-                    case 2: stepTitle = '<div class="step-header">Example Analysis</div>'; break;
-                    case 3: stepTitle = '<div class="step-header">Approach Development</div>'; break;
-                    case 4: stepTitle = '<div class="step-header">Solution & Optimization</div>'; break;
-                    case 5: stepTitle = '<div class="step-header">Behavioral Analysis</div>'; break;
-                    case 6: stepTitle = '<div class="step-header">Problem Modifications</div>'; break;
+                    case 1: stepTitle = '<div class="step-header">Problem Understanding & Analogy</div>'; break;
+                    case 2: stepTitle = '<div class="step-header">Examples & Visualization</div>'; break;
+                    case 3: stepTitle = '<div class="step-header">Interactive Approach Building</div>'; break;
+                    case 4: stepTitle = '<div class="step-header">Multi-Language Solutions</div>'; break;
+                    case 5: stepTitle = '<div class="step-header">FAANG Interview Questions</div>'; break;
+                    case 6: stepTitle = '<div class="step-header">Problem Variations</div>'; break;
                     case 7: stepTitle = '<div class="step-header">Real-World Applications</div>'; break;
                 }
                 
@@ -485,21 +485,64 @@ class DSABuddy {
         
         // Identify step titles and add special formatting
         const stepTitles = [
-            'Question Reading', 'Example', 'Approach', 'Solution', 
-            'Behavioral', 'Modifications', 'Applications'
+            'Problem Understanding', 'Analogy', 'Examples', 'Visualization', 'Approach', 
+            'Brute Force', 'Optimal', 'Solution', 'Interview Questions', 'Behavioral',
+            'Variations', 'Modifications', 'Applications', 'Real-World'
         ];
         
         // Create header sections for important parts
-        stepTitles.forEach((title, index) => {
+        stepTitles.forEach((title) => {
             const regex = new RegExp(`(${title}[:\\s-]*)`, 'gi');
             formatted = formatted.replace(regex, `<h3 class="step-section-title">$1</h3>`);
         });
+        
+        // Step-specific formatting based on step content
+        
+        // Step 3: Format interactive approach building as chat bubbles
+        if (formatted.includes('Interactive Approach') || formatted.includes('approach building')) {
+            // Create chat-like interface for hints and questions
+            formatted = formatted.replace(/(Hint:[^\n<]+)/gi, '<div class="chat-bubble hint"><div class="chat-icon">💡</div><div class="chat-text">$1</div></div>');
+            formatted = formatted.replace(/(Question:[^\n<]+)/gi, '<div class="chat-bubble question"><div class="chat-icon">❓</div><div class="chat-text">$1</div></div>');
+            formatted = formatted.replace(/(Guide:|Guidance:)([^\n<]+)/gi, '<div class="chat-bubble guide"><div class="chat-icon">🧭</div><div class="chat-text">$1$2</div></div>');
+        }
+        
+        // Step 4: Create language toggle effect
+        if (formatted.includes('Java Code') || formatted.includes('Python Code') || formatted.includes('C++ Code')) {
+            // Add language toggle styling
+            formatted = formatted.replace(/(Java Code:)/gi, '<div class="language-section java"><div class="language-header">Java</div>');
+            formatted = formatted.replace(/(Python Code:)/gi, '<div class="language-section python"><div class="language-header">Python</div>');
+            formatted = formatted.replace(/(C\+\+ Code:)/gi, '<div class="language-section cpp"><div class="language-header">C++</div>');
+            
+            // Close language sections
+            const langSections = ['Java Code', 'Python Code', 'C++ Code'];
+            for (let i = 0; i < langSections.length; i++) {
+                const currentLang = langSections[i];
+                const nextLang = langSections[i+1];
+                
+                if (nextLang) {
+                    const regex = new RegExp(`(${currentLang}[\\s\\S]*?)(${nextLang})`, 'gi');
+                    formatted = formatted.replace(regex, '$1</div>$2');
+                }
+            }
+            
+            // Close the last language section
+            const lastLangRegex = new RegExp(`(${langSections[langSections.length-1]}[\\s\\S]*?)($|<h3)`, 'gi');
+            formatted = formatted.replace(lastLangRegex, '$1</div>$2');
+        }
+        
+        // Step 5: Format interview questions
+        formatted = formatted.replace(/(Q\d+:|Interview Question \d+:)([^\n<]+)/gi, '<div class="interview-question"><div class="question-number">$1</div><div class="question-text">$2</div></div>');
+        
+        // Step 6: Format problem variations
+        formatted = formatted.replace(/(Variation \d+:|Modification \d+:)([^\n<]+)/gi, '<div class="problem-variation"><div class="variation-number">$1</div><div class="variation-text">$2</div></div>');
         
         // Highlight key concepts and terms
         const keyTerms = [
             'Time Complexity', 'Space Complexity', 'O\\(n\\)', 'O\\(1\\)', 'O\\(n²\\)', 'O\\(n log n\\)',
             'Brute Force', 'Optimal Solution', 'Algorithm', 'Data Structure', 'Hash Table', 'Two Pointer',
-            'Sliding Window', 'Dynamic Programming', 'Recursion', 'Iteration'
+            'Sliding Window', 'Dynamic Programming', 'Recursion', 'Iteration', 'Binary Search',
+            'Greedy', 'Backtracking', 'Depth-First Search', 'Breadth-First Search', 'DFS', 'BFS',
+            'Tree', 'Graph', 'Heap', 'Stack', 'Queue', 'Linked List', 'Array', 'String', 'HashMap'
         ];
         
         keyTerms.forEach(term => {
@@ -517,7 +560,10 @@ class DSABuddy {
         formatted = formatted.replace(/(\d+\.\s[^<\n]+)(<br>|<\/p>)/g, '<div class="list-item">$1</div>$2');
         
         // Add example highlighting
-        formatted = formatted.replace(/(Example:[^\n<]+)/g, '<div class="example-highlight">$1</div>');
+        formatted = formatted.replace(/(Example \d+:|Input:|Output:)([^\n<]+)/gi, '<div class="example-highlight"><span class="example-label">$1</span>$2</div>');
+        
+        // Format analogies with special styling
+        formatted = formatted.replace(/(Analogy:|Real-world analogy:)([^\n<]+)/gi, '<div class="analogy-box"><div class="analogy-icon">💡</div><div class="analogy-text">$1$2</div></div>');
         
         return formatted;
     }
