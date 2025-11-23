@@ -1,5 +1,25 @@
 {
+  "name": "algomate",
+  "version": "1.0.0",
+  "description": "DSA Learning Platform with AI Mentor",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "vercel-build": "echo 'Build complete'"
+  },
+  "engines": {
+    "node": ">=18.x"
+  },
+  "keywords": ["dsa", "algorithms", "learning", "ai"],
+  "author": "",
+  "license": "ISC",
   "dependencies": {
-    "better-sqlite3": "^12.2.0"
+    "axios": "^1.11.0",
+    "better-sqlite3": "^12.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "multer": "^2.0.2",
+    "pdf-parse": "^1.1.1"
   }
 }

@@ -357,12 +357,12 @@ class DSABuddy {
                 // Format based on step type/number
                 let stepTitle = '';
                 switch(stepNumber) {
-                    case 1: stepTitle = '<div class="step-header">Problem Understanding & Analogy</div>'; break;
-                    case 2: stepTitle = '<div class="step-header">Examples & Visualization</div>'; break;
-                    case 3: stepTitle = '<div class="step-header">Interactive Approach Building</div>'; break;
-                    case 4: stepTitle = '<div class="step-header">Multi-Language Solutions</div>'; break;
-                    case 5: stepTitle = '<div class="step-header">FAANG Interview Questions</div>'; break;
-                    case 6: stepTitle = '<div class="step-header">Problem Variations</div>'; break;
+                    case 1: stepTitle = '<div class="step-header">Question Reading</div>'; break;
+                    case 2: stepTitle = '<div class="step-header">Example Analysis</div>'; break;
+                    case 3: stepTitle = '<div class="step-header">Approach Development</div>'; break;
+                    case 4: stepTitle = '<div class="step-header">Solution & Optimization</div>'; break;
+                    case 5: stepTitle = '<div class="step-header">Behavioral Analysis</div>'; break;
+                    case 6: stepTitle = '<div class="step-header">Problem Modifications</div>'; break;
                     case 7: stepTitle = '<div class="step-header">Real-World Applications</div>'; break;
                 }
                 
@@ -446,36 +446,64 @@ class DSABuddy {
             return `<div class="step-text">${this.enhancedFormatting(content)}</div>`;
         }
         
-        // Extract the content directly from the step data
-        let stepText = '';
-        
-        // Check if content is the specific step key (like "step1", "step2", etc.)
+        // Handle the new structured JSON format
         if (content && typeof content === 'object') {
-            // If this is the JSON response format we're seeing in the example
             const stepKey = Object.keys(content).find(key => key.startsWith('step'));
-            if (stepKey) {
-                stepText = content[stepKey];
+            if (stepKey && content[stepKey] && typeof content[stepKey] === 'object') {
+                // This is our new structured JSON format
+                const stepObj = content[stepKey];
+                let html = '';
+                
+                // Format based on the step number
+                const stepNum = parseInt(stepKey.replace('step', ''));
+                switch (stepNum) {
+                    case 1:
+                        html = this.formatQuestionReadingStep(stepObj);
+                        break;
+                    case 2:
+                        html = this.formatExampleStep(stepObj);
+                        break;
+                    case 3:
+                        html = this.formatApproachStep(stepObj);
+                        break;
+                    case 4:
+                        html = this.formatSolutionStep(stepObj);
+                        break;
+                    case 5:
+                        html = this.formatBehavioralStep(stepObj);
+                        break;
+                    case 6:
+                        html = this.formatVariationsStep(stepObj);
+                        break;
+                    case 7:
+                        html = this.formatApplicationsStep(stepObj);
+                        break;
+                    default:
+                        html = `<div class="step-text">${JSON.stringify(stepObj, null, 2)}</div>`;
+                }
+                
+                return html;
+            } else if (stepKey && typeof content[stepKey] === 'string') {
+                // Handle the old format where step values are strings
+                return `<div class="step-text">${this.enhancedFormatting(content[stepKey])}</div>`;
             } else {
-                // Try to find the step in other potential formats
+                // Try to find content in any format
                 for (const key of Object.keys(content)) {
                     if (typeof content[key] === 'string' && content[key].trim().length > 0) {
-                        stepText = content[key];
-                        break;
+                        return `<div class="step-text">${this.enhancedFormatting(content[key])}</div>`;
                     }
                 }
                 
-                // If we still don't have content, check common property names
-                if (!stepText) {
-                    stepText = content.content || content.text || content.explanation || 
-                               content.value || JSON.stringify(content);
-                }
+                // If we still don't have content, check common property names or stringify
+                const fallbackContent = content.content || content.text || content.explanation || 
+                           content.value || JSON.stringify(content, null, 2);
+                           
+                return `<div class="step-text">${this.enhancedFormatting(fallbackContent)}</div>`;
             }
-        } else {
-            stepText = String(content);
         }
         
-        // Apply enhanced formatting for more detailed output
-        return `<div class="step-text">${this.enhancedFormatting(stepText)}</div>`;
+        // Fallback for any other format
+        return `<div class="step-text">${this.enhancedFormatting(String(content))}</div>`;
     }
     
     // Enhanced formatting with improved structure and detailing
@@ -485,64 +513,21 @@ class DSABuddy {
         
         // Identify step titles and add special formatting
         const stepTitles = [
-            'Problem Understanding', 'Analogy', 'Examples', 'Visualization', 'Approach', 
-            'Brute Force', 'Optimal', 'Solution', 'Interview Questions', 'Behavioral',
-            'Variations', 'Modifications', 'Applications', 'Real-World'
+            'Question Reading', 'Example', 'Approach', 'Solution', 
+            'Behavioral', 'Modifications', 'Applications'
         ];
         
         // Create header sections for important parts
-        stepTitles.forEach((title) => {
+        stepTitles.forEach((title, index) => {
             const regex = new RegExp(`(${title}[:\\s-]*)`, 'gi');
             formatted = formatted.replace(regex, `<h3 class="step-section-title">$1</h3>`);
         });
-        
-        // Step-specific formatting based on step content
-        
-        // Step 3: Format interactive approach building as chat bubbles
-        if (formatted.includes('Interactive Approach') || formatted.includes('approach building')) {
-            // Create chat-like interface for hints and questions
-            formatted = formatted.replace(/(Hint:[^\n<]+)/gi, '<div class="chat-bubble hint"><div class="chat-icon">💡</div><div class="chat-text">$1</div></div>');
-            formatted = formatted.replace(/(Question:[^\n<]+)/gi, '<div class="chat-bubble question"><div class="chat-icon">❓</div><div class="chat-text">$1</div></div>');
-            formatted = formatted.replace(/(Guide:|Guidance:)([^\n<]+)/gi, '<div class="chat-bubble guide"><div class="chat-icon">🧭</div><div class="chat-text">$1$2</div></div>');
-        }
-        
-        // Step 4: Create language toggle effect
-        if (formatted.includes('Java Code') || formatted.includes('Python Code') || formatted.includes('C++ Code')) {
-            // Add language toggle styling
-            formatted = formatted.replace(/(Java Code:)/gi, '<div class="language-section java"><div class="language-header">Java</div>');
-            formatted = formatted.replace(/(Python Code:)/gi, '<div class="language-section python"><div class="language-header">Python</div>');
-            formatted = formatted.replace(/(C\+\+ Code:)/gi, '<div class="language-section cpp"><div class="language-header">C++</div>');
-            
-            // Close language sections
-            const langSections = ['Java Code', 'Python Code', 'C++ Code'];
-            for (let i = 0; i < langSections.length; i++) {
-                const currentLang = langSections[i];
-                const nextLang = langSections[i+1];
-                
-                if (nextLang) {
-                    const regex = new RegExp(`(${currentLang}[\\s\\S]*?)(${nextLang})`, 'gi');
-                    formatted = formatted.replace(regex, '$1</div>$2');
-                }
-            }
-            
-            // Close the last language section
-            const lastLangRegex = new RegExp(`(${langSections[langSections.length-1]}[\\s\\S]*?)($|<h3)`, 'gi');
-            formatted = formatted.replace(lastLangRegex, '$1</div>$2');
-        }
-        
-        // Step 5: Format interview questions
-        formatted = formatted.replace(/(Q\d+:|Interview Question \d+:)([^\n<]+)/gi, '<div class="interview-question"><div class="question-number">$1</div><div class="question-text">$2</div></div>');
-        
-        // Step 6: Format problem variations
-        formatted = formatted.replace(/(Variation \d+:|Modification \d+:)([^\n<]+)/gi, '<div class="problem-variation"><div class="variation-number">$1</div><div class="variation-text">$2</div></div>');
         
         // Highlight key concepts and terms
         const keyTerms = [
             'Time Complexity', 'Space Complexity', 'O\\(n\\)', 'O\\(1\\)', 'O\\(n²\\)', 'O\\(n log n\\)',
             'Brute Force', 'Optimal Solution', 'Algorithm', 'Data Structure', 'Hash Table', 'Two Pointer',
-            'Sliding Window', 'Dynamic Programming', 'Recursion', 'Iteration', 'Binary Search',
-            'Greedy', 'Backtracking', 'Depth-First Search', 'Breadth-First Search', 'DFS', 'BFS',
-            'Tree', 'Graph', 'Heap', 'Stack', 'Queue', 'Linked List', 'Array', 'String', 'HashMap'
+            'Sliding Window', 'Dynamic Programming', 'Recursion', 'Iteration'
         ];
         
         keyTerms.forEach(term => {
@@ -560,12 +545,296 @@ class DSABuddy {
         formatted = formatted.replace(/(\d+\.\s[^<\n]+)(<br>|<\/p>)/g, '<div class="list-item">$1</div>$2');
         
         // Add example highlighting
-        formatted = formatted.replace(/(Example \d+:|Input:|Output:)([^\n<]+)/gi, '<div class="example-highlight"><span class="example-label">$1</span>$2</div>');
-        
-        // Format analogies with special styling
-        formatted = formatted.replace(/(Analogy:|Real-world analogy:)([^\n<]+)/gi, '<div class="analogy-box"><div class="analogy-icon">💡</div><div class="analogy-text">$1$2</div></div>');
+        formatted = formatted.replace(/(Example:[^\n<]+)/g, '<div class="example-highlight">$1</div>');
         
         return formatted;
+    }
+    
+    // Specialized formatters for each step type
+    
+    formatQuestionReadingStep(stepObj) {
+        let html = '<div class="step-text structured-step">';
+        
+        if (stepObj.title) {
+            html += `<h3 class="step-section-title">${stepObj.title}</h3>`;
+        }
+        
+        if (stepObj.summary) {
+            html += `<div class="summary-section">
+                <h4>Summary</h4>
+                <p>${this.formatText(stepObj.summary)}</p>
+            </div>`;
+        }
+        
+        if (stepObj.requirements && stepObj.requirements.length) {
+            html += '<div class="requirements-section">';
+            html += '<h4>Requirements</h4>';
+            html += '<ul class="requirement-list">';
+            stepObj.requirements.forEach(req => {
+                html += `<li>${this.formatText(req)}</li>`;
+            });
+            html += '</ul></div>';
+        }
+        
+        if (stepObj.constraints && stepObj.constraints.length) {
+            html += '<div class="constraints-section">';
+            html += '<h4>Constraints</h4>';
+            html += '<ul class="constraint-list">';
+            stepObj.constraints.forEach(constraint => {
+                html += `<li>${this.formatText(constraint)}</li>`;
+            });
+            html += '</ul></div>';
+        }
+        
+        if (stepObj.edge_cases && stepObj.edge_cases.length) {
+            html += '<div class="edge-cases-section">';
+            html += '<h4>Edge Cases</h4>';
+            html += '<ul class="edge-case-list">';
+            stepObj.edge_cases.forEach(edgeCase => {
+                html += `<li>${this.formatText(edgeCase)}</li>`;
+            });
+            html += '</ul></div>';
+        }
+        
+        // If there's a focusDetail field, add it with special formatting
+        if (stepObj.focusDetail) {
+            html += `<div class="focus-detail">
+                <h4>Detailed Analysis</h4>
+                <div class="focus-content">${this.formatText(stepObj.focusDetail)}</div>
+            </div>`;
+        }
+        
+        html += '</div>';
+        return html;
+    }
+    
+    formatExampleStep(stepObj) {
+        let html = '<div class="step-text structured-step">';
+        
+        if (stepObj.title) {
+            html += `<h3 class="step-section-title">${stepObj.title}</h3>`;
+        }
+        
+        if (stepObj.examples && stepObj.examples.length) {
+            stepObj.examples.forEach((example, index) => {
+                html += `<div class="example-card">
+                    <div class="example-header">Example ${index + 1}</div>
+                    <div class="example-content">
+                        <div class="example-input"><strong>Input:</strong> ${this.formatText(example.input)}</div>
+                        <div class="example-output"><strong>Output:</strong> ${this.formatText(example.output)}</div>
+                        <div class="example-explanation"><strong>Explanation:</strong> ${this.formatText(example.explanation)}</div>
+                    </div>
+                </div>`;
+            });
+        }
+        
+        // If there's a focusDetail field, add it with special formatting
+        if (stepObj.focusDetail) {
+            html += `<div class="focus-detail">
+                <h4>Detailed Example Analysis</h4>
+                <div class="focus-content">${this.formatText(stepObj.focusDetail)}</div>
+            </div>`;
+        }
+        
+        html += '</div>';
+        return html;
+    }
+    
+    formatApproachStep(stepObj) {
+        let html = '<div class="step-text structured-step">';
+        
+        if (stepObj.title) {
+            html += `<h3 class="step-section-title">${stepObj.title}</h3>`;
+        }
+        
+        if (stepObj.brute_force) {
+            html += `<div class="approach-section brute-force">
+                <h4>Brute Force Approach</h4>
+                <div class="approach-content">${this.formatText(stepObj.brute_force)}</div>
+            </div>`;
+        }
+        
+        if (stepObj.optimal) {
+            html += `<div class="approach-section optimal">
+                <h4>Optimal Approach</h4>
+                <div class="approach-content">${this.formatText(stepObj.optimal)}</div>
+            </div>`;
+        }
+        
+        if (stepObj.interactive_prompts && stepObj.interactive_prompts.length) {
+            html += '<div class="prompts-section">';
+            html += '<h4>Guiding Questions</h4>';
+            html += '<ol class="prompt-list">';
+            stepObj.interactive_prompts.forEach(prompt => {
+                html += `<li>${this.formatText(prompt)}</li>`;
+            });
+            html += '</ol></div>';
+        }
+        
+        // If there's a focusDetail field, add it with special formatting
+        if (stepObj.focusDetail) {
+            html += `<div class="focus-detail">
+                <h4>Detailed Approach Analysis</h4>
+                <div class="focus-content">${this.formatText(stepObj.focusDetail)}</div>
+            </div>`;
+        }
+        
+        html += '</div>';
+        return html;
+    }
+    
+    formatSolutionStep(stepObj) {
+        let html = '<div class="step-text structured-step">';
+        
+        if (stepObj.title) {
+            html += `<h3 class="step-section-title">${stepObj.title}</h3>`;
+        }
+        
+        if (stepObj.solutions) {
+            // Create tabs for different languages
+            html += '<div class="code-tabs">';
+            html += '<div class="tab-header">';
+            
+            const languages = Object.keys(stepObj.solutions);
+            languages.forEach((lang, index) => {
+                const activeClass = index === 0 ? 'active' : '';
+                html += `<div class="tab-button ${activeClass}" data-lang="${lang}">${lang.toUpperCase()}</div>`;
+            });
+            
+            html += '</div>'; // End of tab-header
+            html += '<div class="tab-content">';
+            
+            languages.forEach((lang, index) => {
+                const solution = stepObj.solutions[lang];
+                const activeClass = index === 0 ? 'active' : '';
+                
+                html += `<div class="tab-pane ${activeClass}" data-lang="${lang}">`;
+                html += `<div class="code-block"><pre><code>${solution.code}</code></pre></div>`;
+                html += `<div class="code-explanation">${this.formatText(solution.explanation)}</div>`;
+                html += `<div class="complexity">
+                    <span class="time-complexity"><strong>Time:</strong> ${solution.time}</span>
+                    <span class="space-complexity"><strong>Space:</strong> ${solution.space}</span>
+                </div>`;
+                html += '</div>'; // End of tab-pane
+            });
+            
+            html += '</div>'; // End of tab-content
+            html += '</div>'; // End of code-tabs
+            
+            // Add JavaScript to handle tab switching
+            setTimeout(() => {
+                document.querySelectorAll('.tab-button').forEach(button => {
+                    button.addEventListener('click', () => {
+                        const lang = button.dataset.lang;
+                        
+                        // Deactivate all tabs and panes
+                        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                        document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+                        
+                        // Activate the selected tab and pane
+                        button.classList.add('active');
+                        document.querySelector(`.tab-pane[data-lang="${lang}"]`).classList.add('active');
+                    });
+                });
+            }, 100);
+        }
+        
+        // If there's a focusDetail field, add it with special formatting
+        if (stepObj.focusDetail) {
+            html += `<div class="focus-detail">
+                <h4>Detailed Solution Analysis</h4>
+                <div class="focus-content">${this.formatText(stepObj.focusDetail)}</div>
+            </div>`;
+        }
+        
+        html += '</div>';
+        return html;
+    }
+    
+    formatBehavioralStep(stepObj) {
+        let html = '<div class="step-text structured-step">';
+        
+        if (stepObj.title) {
+            html += `<h3 class="step-section-title">${stepObj.title}</h3>`;
+        }
+        
+        if (stepObj.behavioral && stepObj.behavioral.length) {
+            stepObj.behavioral.forEach((item, index) => {
+                html += `<div class="behavioral-card">
+                    <div class="question-header">Question ${index + 1}</div>
+                    <div class="question">${this.formatText(item.question)}</div>
+                    <div class="answer-header">Answer</div>
+                    <div class="answer">${this.formatText(item.answer)}</div>
+                </div>`;
+            });
+        }
+        
+        // If there's a focusDetail field, add it with special formatting
+        if (stepObj.focusDetail) {
+            html += `<div class="focus-detail">
+                <h4>Detailed Behavioral Analysis</h4>
+                <div class="focus-content">${this.formatText(stepObj.focusDetail)}</div>
+            </div>`;
+        }
+        
+        html += '</div>';
+        return html;
+    }
+    
+    formatVariationsStep(stepObj) {
+        let html = '<div class="step-text structured-step">';
+        
+        if (stepObj.title) {
+            html += `<h3 class="step-section-title">${stepObj.title}</h3>`;
+        }
+        
+        if (stepObj.variations && stepObj.variations.length) {
+            stepObj.variations.forEach((variation, index) => {
+                html += `<div class="variation-card">
+                    <div class="variation-name">Variation ${index + 1}: ${this.formatText(variation.variant)}</div>
+                    <div class="variation-hint">${this.formatText(variation.hint)}</div>
+                </div>`;
+            });
+        }
+        
+        // If there's a focusDetail field, add it with special formatting
+        if (stepObj.focusDetail) {
+            html += `<div class="focus-detail">
+                <h4>Detailed Variations Analysis</h4>
+                <div class="focus-content">${this.formatText(stepObj.focusDetail)}</div>
+            </div>`;
+        }
+        
+        html += '</div>';
+        return html;
+    }
+    
+    formatApplicationsStep(stepObj) {
+        let html = '<div class="step-text structured-step">';
+        
+        if (stepObj.title) {
+            html += `<h3 class="step-section-title">${stepObj.title}</h3>`;
+        }
+        
+        if (stepObj.applications && stepObj.applications.length) {
+            stepObj.applications.forEach((app, index) => {
+                html += `<div class="application-card">
+                    <div class="application-system">${this.formatText(app.system)}</div>
+                    <div class="application-explanation">${this.formatText(app.explanation)}</div>
+                </div>`;
+            });
+        }
+        
+        // If there's a focusDetail field, add it with special formatting
+        if (stepObj.focusDetail) {
+            html += `<div class="focus-detail">
+                <h4>Detailed Applications Analysis</h4>
+                <div class="focus-content">${this.formatText(stepObj.focusDetail)}</div>
+            </div>`;
+        }
+        
+        html += '</div>';
+        return html;
     }
 
     formatText(text) {
