@@ -150,7 +150,7 @@ class DSABuddy {
 
     async loadStats() {
         try {
-            const response = await fetch(`${this.apiBase}/problems/stats`);
+            const response = await fetch(`${this.apiBase}/stats`);
             const stats = await response.json();
 
             if (response.ok) {
@@ -244,7 +244,7 @@ class DSABuddy {
 
     async updateStatus(problemId, status) {
         try {
-            const response = await fetch(`${this.apiBase}/status/${problemId}`, {
+            const response = await fetch(`${this.apiBase}/status?id=${problemId}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -399,7 +399,7 @@ class DSABuddy {
         if (!this.currentProblem) return;
 
         try {
-            const response = await fetch(`${this.apiBase}/ai/${stepNumber}`, {
+            const response = await fetch(`${this.apiBase}/ai?step=${stepNumber}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
