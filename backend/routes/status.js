@@ -4,7 +4,7 @@ const db = require('../db');
 const router = express.Router();
 
 // POST /api/status/:id - update problem status
-router.post('/status/:id', (req, res) => {
+router.post('/status/:id', async (req, res) => {
   const problemId = parseInt(req.params.id);
   const { status } = req.body;
 
@@ -27,7 +27,7 @@ router.post('/status/:id', (req, res) => {
   try {
     const sql = 'UPDATE problems SET status = ? WHERE id = ?';
     const stmt = db.prepare(sql);
-    const result = stmt.run(status, problemId);
+    const result = await Promise.resolve(stmt.run(status, problemId));
     
     if (result.changes === 0) {
       res.status(404).json({ error: 'Problem not found' });
@@ -45,7 +45,7 @@ router.post('/status/:id', (req, res) => {
 });
 
 // GET /api/status/:id - get current status of a problem
-router.get('/status/:id', (req, res) => {
+router.get('/status/:id', async (req, res) => {
   const problemId = parseInt(req.params.id);
 
   if (!problemId) {
@@ -55,7 +55,7 @@ router.get('/status/:id', (req, res) => {
   try {
     const sql = 'SELECT id, name, status FROM problems WHERE id = ?';
     const stmt = db.prepare(sql);
-    const row = stmt.get(problemId);
+    const row = await Promise.resolve(stmt.get(problemId));
     
     if (!row) {
       res.status(404).json({ error: 'Problem not found' });

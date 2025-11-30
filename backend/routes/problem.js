@@ -33,10 +33,10 @@ router.get('/problem/:id', async (req, res) => {
 });
 
 // Helper function to get problem by ID
-function getProblemById(id) {
+async function getProblemById(id) {
   try {
     const stmt = db.prepare('SELECT * FROM problems WHERE id = ?');
-    const row = stmt.get(id);
+    const row = await Promise.resolve(stmt.get(id));
     return row;
   } catch (err) {
     throw new Error(`Error fetching problem: ${err.message}`);
@@ -44,13 +44,13 @@ function getProblemById(id) {
 }
 
 // Helper function to get AI steps for a problem
-function getAIStepsForProblem(problemId) {
+async function getAIStepsForProblem(problemId) {
   try {
     const stmt = db.prepare('SELECT step, response FROM ai_cache WHERE problem_id = ? ORDER BY step');
-    const rows = stmt.all(problemId);
+    const rows = await Promise.resolve(stmt.all(problemId));
     
     const steps = {};
-    rows.forEach(row => {
+    (rows || []).forEach(row => {
       try {
         steps[`step${row.step}`] = JSON.parse(row.response);
       } catch (parseErr) {

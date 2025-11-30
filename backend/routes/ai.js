@@ -4,8 +4,8 @@ const db = require('../db');
 
 const router = express.Router();
 
-// Gemini API configuration
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+// Gemini 2.0 Flash API configuration
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // System prompt for Gemini API
@@ -222,30 +222,37 @@ When responding, produce only JSON following the schema above.`;
   }
 }
 
-// Helper functions
-function getProblemById(id) {
+// Helper functions - async to support both SQLite and Supabase
+async function getProblemById(id) {
   try {
     const stmt = db.prepare('SELECT * FROM problems WHERE id = ?');
-    return stmt.get(id);
+    const result = await Promise.resolve(stmt.get(id));
+    return result;
   } catch (err) {
     throw new Error(`Error fetching problem: ${err.message}`);
   }
 }
 
-function getCachedAIResponse(problemId, step) {
+async function getCachedAIResponse(problemId, step) {
   try {
     const stmt = db.prepare('SELECT response FROM ai_cache WHERE problem_id = ? AND step = ?');
-    const row = stmt.get(problemId, step);
+    const row = await Promise.resolve(stmt.get(problemId, step));
     return row ? row.response : null;
   } catch (err) {
     throw new Error(`Error fetching cached AI response: ${err.message}`);
   }
 }
 
-function cacheAIResponse(problemId, step, response) {
+async function cacheAIResponse(problemId, step, response) {
   try {
-    const stmt = db.prepare('INSERT OR REPLACE INTO ai_cache (problem_id, step, response) VALUES (?, ?, ?)');
-    const result = stmt.run(problemId, step, response);
+    // Use PostgreSQL syntax for upsert when on Supabase
+    const isPostgres = process.env.DATABASE_URL;
+    const sql = isPostgres 
+      ? 'INSERT INTO ai_cache (problem_id, step, response) VALUES ($1, $2, $3) ON CONFLICT (problem_id, step) DO UPDATE SET response = $3'
+      : 'INSERT OR REPLACE INTO ai_cache (problem_id, step, response) VALUES (?, ?, ?)';
+    
+    const stmt = db.prepare(sql);
+    const result = await Promise.resolve(stmt.run(problemId, step, response));
     return result.lastInsertRowid;
   } catch (err) {
     throw new Error(`Error caching AI response: ${err.message}`);

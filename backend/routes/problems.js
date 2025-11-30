@@ -4,7 +4,7 @@ const db = require('../db');
 const router = express.Router();
 
 // GET /api/problems - returns list of problems
-router.get('/problems', (req, res) => {
+router.get('/problems', async (req, res) => {
   try {
     const { search, category, difficulty, status } = req.query;
     
@@ -38,7 +38,7 @@ router.get('/problems', (req, res) => {
     sql += ' ORDER BY created_at DESC';
 
     const stmt = db.prepare(sql);
-    const rows = stmt.all(...params);
+    const rows = await Promise.resolve(stmt.all(...params));
     
     res.json({
       problems: rows,
@@ -51,48 +51,44 @@ router.get('/problems', (req, res) => {
 });
 
 // GET /api/problems/stats - returns statistics about problems
-router.get('/problems/stats', (req, res) => {
-  const statsQueries = [
-    'SELECT COUNT(*) as total FROM problems',
-    'SELECT COUNT(*) as not_started FROM problems WHERE status = "Not Started"',
-    'SELECT COUNT(*) as in_progress FROM problems WHERE status = "In Progress"',
-    'SELECT COUNT(*) as done FROM problems WHERE status = "Done"',
-    'SELECT difficulty, COUNT(*) as count FROM problems GROUP BY difficulty',
-    'SELECT category, COUNT(*) as count FROM problems GROUP BY category'
-  ];
+router.get('/problems/stats', async (req, res) => {
+  try {
+    const totalStmt = db.prepare('SELECT COUNT(*) as total FROM problems');
+    const notStartedStmt = db.prepare("SELECT COUNT(*) as count FROM problems WHERE status = 'Not Started'");
+    const inProgressStmt = db.prepare("SELECT COUNT(*) as count FROM problems WHERE status = 'In Progress'");
+    const doneStmt = db.prepare("SELECT COUNT(*) as count FROM problems WHERE status = 'Done'");
+    const byDifficultyStmt = db.prepare('SELECT difficulty, COUNT(*) as count FROM problems GROUP BY difficulty');
+    const byCategoryStmt = db.prepare('SELECT category, COUNT(*) as count FROM problems GROUP BY category');
 
-  Promise.all(statsQueries.map(query => {
-    return new Promise((resolve, reject) => {
-      db.all(query, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows);
-      });
-    });
-  }))
-  .then(results => {
-    const [total, notStarted, inProgress, done, byDifficulty, byCategory] = results;
+    const [total, notStarted, inProgress, done, byDifficulty, byCategory] = await Promise.all([
+      Promise.resolve(totalStmt.get()),
+      Promise.resolve(notStartedStmt.get()),
+      Promise.resolve(inProgressStmt.get()),
+      Promise.resolve(doneStmt.get()),
+      Promise.resolve(byDifficultyStmt.all()),
+      Promise.resolve(byCategoryStmt.all())
+    ]);
     
     res.json({
-      total: total[0].total,
+      total: total?.total || 0,
       status: {
-        'Not Started': notStarted[0].not_started,
-        'In Progress': inProgress[0].in_progress,
-        'Done': done[0].done
+        'Not Started': notStarted?.count || 0,
+        'In Progress': inProgress?.count || 0,
+        'Done': done?.count || 0
       },
-      difficulty: byDifficulty.reduce((acc, row) => {
-        acc[row.difficulty] = row.count;
+      difficulty: (byDifficulty || []).reduce((acc, row) => {
+        if (row.difficulty) acc[row.difficulty] = row.count;
         return acc;
       }, {}),
-      category: byCategory.reduce((acc, row) => {
-        acc[row.category] = row.count;
+      category: (byCategory || []).reduce((acc, row) => {
+        if (row.category) acc[row.category] = row.count;
         return acc;
       }, {})
     });
-  })
-  .catch(err => {
+  } catch (err) {
     console.error('Error fetching stats:', err);
     res.status(500).json({ error: 'Failed to fetch statistics' });
-  });
+  }
 });
 
 module.exports = router;

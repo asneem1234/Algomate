@@ -118,7 +118,7 @@ function parseProblemLine(line) {
 }
 
 // Insert problem into database
-function insertProblem(problem) {
+async function insertProblem(problem) {
   try {
     const sql = `
       INSERT INTO problems (name, category, difficulty, leetcode_number, description)
@@ -126,13 +126,13 @@ function insertProblem(problem) {
     `;
     
     const stmt = db.prepare(sql);
-    const result = stmt.run(
+    const result = await Promise.resolve(stmt.run(
       problem.name,
       problem.category,
       problem.difficulty,
       problem.leetcode_number,
       problem.description
-    );
+    ));
     
     return {
       id: result.lastInsertRowid,
